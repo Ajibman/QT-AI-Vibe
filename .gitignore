@@ -32,3 +32,13 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+‎# Ignore sensitive credential values and environment files
+‎.env
+‎.env.production
+‎.env.local
+
+‎# Ignore dynamic mobile compilation directories
+‎www/
+‎android/app/build/
+‎node_modules/
