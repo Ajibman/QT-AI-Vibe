@@ -1,26 +1,23 @@
-import { defineConfig } from 'vite';
+ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 export default defineConfig({
-  plugins: [
-    react(),
-    // Automatically copies the core engine scripts to your build output folder
-    viteStaticCopy({
-      targets: [
-        {
-          src: 'core/js/**/*',
-          dest: 'core/js'
-        }
-      ]
-    })
-  ],
+  plugins: [react()],
   build: {
     outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: './index.html'
+        // Main web interface entry
+        main: './index.html',
+        // Core system routing engine entry
+        coreEngine: './core/js/main.js'
+      },
+      output: {
+        // Keeps your exact script paths predictable in the build output
+        entryFileNames: (chunkInfo) => {
+          return chunkInfo.name === 'coreEngine' ? 'core/js/main.js' : 'assets/[name]-[hash].js';
+        }
       }
     }
   }
