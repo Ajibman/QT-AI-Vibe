@@ -141,50 +141,36 @@
  * ============================================================
  */
 
+
+const OrderRouter = {
+    initialize() {
+        this.activeOrders = new Map();
+        this.statusCallbacks = new Set();
+    },
+
+    routeOrder(orderData) {
+        if (!this.isValidOrder(orderData)) {
+            return { success: false, error: 'Invalid order structure' };
+        }
+        const internalId = `OR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const processedOrder = {
+            id: internalId,
+            externalId: orderData.id || null,
+            items: orderData.items || [],
+            total: orderData.total || 0,
+            status: 'PENDING',
+            createdAt: new Date().toISOString()
+        };
+        this.activeOrders.set(internalId, processedOrder);
+        return { success: true, orderId: internalId };
+    },
+
+    isValidOrder(order) {
+        return !!(order && typeof order === 'object' && Array.isArray(order.items));
+    }
+}; 
+
 const ROUTER_NAME =
-    "order_router";
-
-const ROUTER_VERSION =
-    "1.0.0";
-
-const ROUTER_STATUS = Object.freeze({
-
-    UNAVAILABLE:
-        "UNAVAILABLE",
-
-    READY:
-        "READY",
-
-    ROUTING:
-        "ROUTING",
-
-    COMPLETED:
-        "COMPLETED",
-
-    FAILED:
-        "FAILED"
-
-});
-
-const ROUTING_DECISION = Object.freeze({
-
-    ROUTE:
-        "ROUTE",
-
-    REJECT:
-        "REJECT"
-
-});
-
-const ROUTING_TYPE = Object.freeze({
-
-    ORDER:
-        "ORDER",
-
-    TRANSPORT:
-        "TRANSPORT"
-
-});
 
 /* ============================================================
  * SECTION 2 — INTERNAL RUNTIME STATE
@@ -864,6 +850,7 @@ function configureOrderRouter(
  * @returns {Object}
  */
 function attachExchangeGateway(
+function attachExchangeGateway(
     exchangeGateway
 ) {
 
@@ -921,16 +908,12 @@ function attachExchangeGateway(
 
 }
 
-/**
- * Return the currently attached ExchangeGateway.
- *
- * @returns {Object|null}
- */
 function getExchangeGateway() {
 
     return (
-        routerState.exchangeGateway ??
-        null
+        routerState.exchangeGateway !== undefined && routerState.exchangeGateway !== null
+            ? routerState.exchangeGateway
+            : null
     );
 
 }
@@ -953,20 +936,16 @@ function buildRoutingResult(
     return {
 
         success:
-            data.success ??
-            false,
+            data.success !== undefined && data.success !== null ? data.success : false,
 
         decision:
-            data.decision ??
-            ROUTING_DECISION.REJECT,
+            data.decision !== undefined && data.decision !== null ? data.decision : ROUTING_DECISION.REJECT,
 
         routed:
-            data.routed ??
-            false,
+            data.routed !== undefined && data.routed !== null ? data.routed : false,
 
         status:
-            data.status ??
-            ROUTER_STATUS.FAILED,
+            data.status !== undefined && data.status !== null ? data.status : ROUTER_STATUS.FAILED,
 
         router:
             ROUTER_NAME,
@@ -975,43 +954,34 @@ function buildRoutingResult(
             ROUTER_VERSION,
 
         routingType:
-            data.routingType ??
-            null,
+            data.routingType !== undefined && data.routingType !== null ? data.routingType : null,
 
         routingId:
-            data.routingId ??
-            null,
+            data.routingId !== undefined && data.routingId !== null ? data.routingId : null,
 
         orderId:
-            data.orderId ??
-            null,
+            data.orderId !== undefined && data.orderId !== null ? data.orderId : null,
 
         transportId:
-            data.transportId ??
-            null,
+            data.transportId !== undefined && data.transportId !== null ? data.transportId : null,
 
         executionId:
-            data.executionId ??
-            null,
+            data.executionId !== undefined && data.executionId !== null ? data.executionId : null,
 
         gateway:
             "ExchangeGateway",
 
         gatewayResult:
-            data.gatewayResult ??
-            null,
+            data.gatewayResult !== undefined && data.gatewayResult !== null ? data.gatewayResult : null,
 
         reason:
-            data.reason ??
-            null,
+            data.reason !== undefined && data.reason !== null ? data.reason : null,
 
         error:
-            data.error ??
-            null,
+            data.error !== undefined && data.error !== null ? data.error : null,
 
         timestamp:
-            data.timestamp ??
-            now()
+            data.timestamp !== undefined && data.timestamp !== null ? data.timestamp : now()
 
     };
 
@@ -1812,63 +1782,70 @@ async function routeTransportContract(
  * @param {Object} request
  * @returns {Promise<Object>}
  */
-async function route(
+ async function route(
     request = {}
 ) {
 
-    if (
-        !request ||
-        typeof request !== "object"
-    ) {
+    try {
+        if (
+            !request ||
+            typeof request !== "object"
+        ) {
+
+            return buildRoutingResult({
+
+                reason:
+                    "INVALID_ROUTING_REQUEST"
+
+            });
+
+        }
+
+        const type =
+            request.type !== undefined && request.type !== null ? request.type : ROUTING_TYPE.ORDER;
+
+        if (
+            type ===
+            ROUTING_TYPE.TRANSPORT
+        ) {
+
+            return await routeTransportContract(
+
+                request.transport
+
+            );
+
+        }
+
+        if (
+            type ===
+            ROUTING_TYPE.ORDER
+        ) {
+
+            return await routeOrder(
+
+                request.order
+
+            );
+
+        }
 
         return buildRoutingResult({
 
             reason:
-                "INVALID_ROUTING_REQUEST"
+                "UNSUPPORTED_ROUTING_TYPE"
 
         });
-
+    } catch (criticalError) {
+        return buildRoutingResult({
+            success: false,
+            reason: "CRITICAL_ROUTE_EXCEPTION",
+            error: criticalError.message || String(criticalError)
+        });
     }
 
-    const type =
-        request.type ??
-        ROUTING_TYPE.ORDER;
-
-    if (
-        type ===
-        ROUTING_TYPE.TRANSPORT
-    ) {
-
-        return await routeTransportContract(
-
-            request.transport
-
-        );
-
-    }
-
-    if (
-        type ===
-        ROUTING_TYPE.ORDER
-    ) {
-
-        return await routeOrder(
-
-            request.order
-
-        );
-
-    }
-
-    return buildRoutingResult({
-
-        reason:
-            "UNSUPPORTED_ROUTING_TYPE"
-
-    });
-
-}
-
+ }
+     
 /* ============================================================
  * SECTION 12 — ROUTER STATUS
  * ============================================================
