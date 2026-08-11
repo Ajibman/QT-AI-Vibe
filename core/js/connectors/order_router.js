@@ -1886,7 +1886,7 @@ function getOrderRouterStatus() {
 
                     typeof routerState.exchangeGateway
                         .submitOrder ===
-                    "function"
+                        "function"
 
                 ),
 
@@ -1897,7 +1897,7 @@ function getOrderRouterStatus() {
 
                     typeof routerState.exchangeGateway
                         .processTransportContract ===
-                    "function"
+                        "function"
 
                 ),
 
@@ -1908,7 +1908,7 @@ function getOrderRouterStatus() {
 
                     typeof routerState.exchangeGateway
                         .acceptTransportContract ===
-                    "function"
+                        "function"
 
                 )
 
@@ -1958,7 +1958,7 @@ function getOrderRouterStatus() {
  *
  * @returns {Object}
  */
-function resetOrderRouter() {
+ function resetOrderRouter() {
 
     routerState.totalRequests =
         0;
@@ -2020,7 +2020,7 @@ function resetOrderRouter() {
 
     };
 
-     }
+}
 
 /* ============================================================
  * SECTION 14 — PUBLIC API
