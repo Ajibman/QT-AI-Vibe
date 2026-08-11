@@ -171,316 +171,203 @@ const OrderRouter = {
 }; 
 
 const ROUTER_NAME =
-
-/* ============================================================
- * SECTION 2 — INTERNAL RUNTIME STATE
- * ============================================================
- */
-
-const routerState = {
-
-    initialized:
-        false,
-
-    status:
-        ROUTER_STATUS.UNAVAILABLE,
-
-    eventHub:
-        null,
-
-    exchangeGateway:
-        null,
-
-    totalRequests:
-        0,
-
-    successfulRoutes:
-        0,
-
-    failedRoutes:
-        0,
-
-    rejectedRequests:
-        0,
-
-    lastRoutingId:
-        null,
-
-    lastOrderId:
-        null,
-
-    lastRoute:
-        null,
-
-    lastResult:
-        null,
-
-    updatedAt:
-        null
-
-};
-
-/* ============================================================
- * SECTION 3 — INTERNAL UTILITIES
- * ============================================================
- */
-
-/**
- * Return the current timestamp.
- *
- * @returns {string}
- */
-function now() {
-
-    return new Date().toISOString();
-
-}
-
-/**
- * Validate a non-empty string.
- *
- * @param {*} value
- * @returns {boolean}
- */
-function isNonEmptyString(value) {
-
-    return (
-
-        typeof value ===
-        "string"
-
-        &&
-
-        value.trim().length >
-        0
-
-    );
-
-}
-
-/**
- * Generate a routing identifier.
- *
- * @returns {string}
- */
-function generateRoutingId() {
-
-    return (
-
-        "route_" +
-
-        Date.now().toString(36) +
-
-        "_" +
-
-        Math.random()
-            .toString(36)
-            .slice(2, 10)
-
-    );
-
-}
-
-/**
- * Publish a router lifecycle event.
- *
- * Event publication failure does not alter the routing result.
- *
- * @param {string} eventName
- * @param {Object} payload
- * @returns {boolean}
- */
-function publishEvent(
-    eventName,
-    payload = {}
-) {
-
-    if (
-        !routerState.eventHub
-    ) {
-
-        return false;
-
-    }
-
-    if (
-        typeof routerState.eventHub.emit !==
-        "function"
-    ) {
-
-        return false;
-
-    }
-
-    try {
-
-        routerState.eventHub.emit(
-
-            eventName,
-
-            payload
-
-        );
-
-        return true;
-
-    } catch (error) {
-
-        /*
-         * Event publication failure is recorded as diagnostic
-         * information only.
-         *
-         * It must not convert an otherwise successful gateway
-         * routing operation into a failed execution.
-         */
-
-        return false;
-
-    }
-
-}
-
-/**
- * Resolve an order identifier.
- *
- * @param {Object} order
- * @returns {string|null}
- */
-function resolveOrderId(order) {
-
-    if (
-        !order ||
-        typeof order !== "object"
-    ) {
-
-        return null;
-
-    }
-
-    return (
-
-        order.orderId ??
-
-        order.requestId ??
-
-        order.executionId ??
-
-        null
-
-    );
-
-}
-
-/**
- * Resolve a transport identifier.
- *
- * @param {Object} transport
- * @returns {string|null}
- */
-function resolveTransportId(
-    transport
-) {
-
-    if (
-        !transport ||
-        typeof transport !== "object"
-    ) {
-
-        return null;
-
-    }
-
-    return (
-
-        transport.transportId ??
-
-        transport.route?.routeId ??
-
-        transport.route?.execution?.executionId ??
-
-        null
-
-    );
-
-}
-
-/* ============================================================
- * SECTION 4 — GATEWAY CONTRACT VALIDATION
- * ============================================================
- */
-
-/**
- * Validate that the supplied object conforms to the actual
- * ExchangeGateway contract.
- *
- * Supported routing contracts:
- *
- * 1. submitOrder(order)
- * 2. processTransportContract(transport)
- *
- * @param {Object} gateway
- * @returns {Object}
- */
-function validateGatewayContract(
-    gateway
-) {
-
-    if (
-        !gateway ||
-        typeof gateway !== "object"
-    ) {
-
-        return {
-
-            valid:
-                false,
-
-            reason:
-                "EXCHANGE_GATEWAY_REQUIRED"
-
-        };
-
-    }
-
-    const supportsOrderSubmission =
-
-        typeof gateway.submitOrder ===
-        "function";
-
-    const supportsTransportContract =
-
-        typeof gateway.processTransportContract ===
-        "function";
-
-    if (
-        !supportsOrderSubmission &&
-        !supportsTransportContract
-    ) {
-
-        return {
-
-            valid:
-                false,
-
-            reason:
-                "INVALID_EXCHANGE_GATEWAY_CONTRACT"
-
-        };
-
-    }
-
-    return {
-
-        valid:
-            true,
-
-        supportsOrderSubmission,
-
-        supportsTransportContract
-
-    };
-
-}
+ 
+‎// =====================================================
+‎// SECTION 2 — MAIN ORCHESTRATION LOOP (CONCLUSION)
+‎// =====================================================
+‎            let executionResult = null;
+‎
+‎            if (this.mode === "LIVE") {
+‎                if (!this.orderRouter) {
+‎                    this.metrics.failedCycles++;
+‎                    this.metrics.completedCycles++;
+‎                    this.state.lastCycleAt = Date.now();
+‎                    return {
+‎                        status: "ORDER_ROUTER_UNAVAILABLE",
+‎                        approved: false,
+‎                        decision,
+‎                        allocation,
+‎                        risk,
+‎                        governance,
+‎                        execution,
+‎                        executionResult: null
+‎                    };
+‎                }
+‎
+‎                const targetQuantity = Number(
+‎                    allocation.quantity !== undefined && allocation.quantity !== null ? allocation.quantity :
+‎                    (allocation.positionSize !== undefined && allocation.positionSize !== null ? allocation.positionSize :
+‎                    (allocation.units !== undefined && allocation.units !== null ? allocation.units : 0))
+‎                );
+‎
+‎                if (isNaN(targetQuantity) || targetQuantity <= 0) {
+‎                    this.metrics.failedCycles++;
+‎                    this.metrics.completedCycles++;
+‎                    return {
+‎                        status: "INVALID_ALLOCATION_QUANTITY",
+‎                        approved: false,
+‎                        calculatedQuantity: targetQuantity,
+‎                        decision,
+‎                        allocation
+‎                    };
+‎                }
+‎
+‎                const executionIntent = {
+‎                    signal: {
+‎                        symbol: (strategy && strategy.symbol) ? strategy.symbol : signal.symbol,
+‎                        side: decision.action,
+‎                        quantity: targetQuantity,
+‎                        price: signal.price !== undefined ? signal.price : ((signal.marketData && signal.marketData.price) ? signal.marketData.price : 0)
+‎                    },
+‎                    strategy,
+‎                    decision,
+‎                    allocation,
+‎                    risk,
+‎                    governance,
+‎                    execution,
+‎                    mode: this.mode
+‎                };
+‎
+‎                if (typeof this.orderRouter.routeTransportContract !== "function") {
+‎                    this.metrics.failedCycles++;
+‎                    this.metrics.completedCycles++;
+‎                    this.state.lastCycleAt = Date.now();
+‎                    return {
+‎                        status: "ORDER_ROUTER_INTERFACE_UNAVAILABLE",
+‎                        approved: false,
+‎                        decision,
+‎                        allocation,
+‎                        risk,
+‎                        governance,
+‎                        execution,
+‎                        executionResult: null
+‎                    };
+‎                }
+‎
+‎                executionResult = await this.orderRouter.routeTransportContract(executionIntent);
+‎            }
+‎
+‎            this.metrics.successfulCycles++;
+‎            this.metrics.completedCycles++;
+‎            this.state.lastCycleAt = Date.now();
+‎
+‎            return {
+‎                status: this.mode === "LIVE" ? "LIVE_EXECUTED" : "PAPER_COMPLETED",
+‎                approved: true,
+‎                decision,
+‎                allocation,
+‎                risk,
+‎                governance,
+‎                execution,
+‎                executionResult,
+‎                logistics,
+‎                correlation,
+‎                connectivity
+‎            };
+‎
+‎        } catch (runtimeError) {
+‎            this.metrics.failedCycles++;
+‎            this.metrics.completedCycles++;
+‎            this.state.lastCycleAt = Date.now();
+‎            this.log("Unhandled Exception inside Orchestration Pipeline:", runtimeError);
+‎            throw runtimeError;
+‎        }
+‎    }
+‎
+‎    // =====================================================
+‎    // SECTION 3 — SYSTEM HEALTH & DIAGNOSTICS
+‎    // =====================================================
+‎    getSystemStatus() {
+‎        return {
+‎            mode: this.mode,
+‎            systemMode: this.state.systemMode,
+‎            uptime: Date.now() - this.startedAt,
+‎            cycle: this.state.cycle,
+‎            lastSignal: this.state.lastSignal,
+‎            lastDecision: this.state.lastDecision,
+‎            lastCycleAt: this.state.lastCycleAt,
+‎            metrics: {
+‎                completedCycles: this.metrics.completedCycles,
+‎                blockedCycles: this.metrics.blockedCycles,
+‎                successfulCycles: this.metrics.successfulCycles,
+‎                failedCycles: this.metrics.failedCycles
+‎            },
+‎            connectivity: (this.marketConnectivity && typeof this.marketConnectivity.getStatus === "function") ? this.marketConnectivity.getStatus() : null,
+‎            orderRouter: (this.orderRouter && typeof this.orderRouter.getOrderRouterStatus === "function") ? this.orderRouter.getOrderRouterStatus() : null,
+‎            exchangeGateway: (this.exchangeGateway && typeof this.exchangeGateway.getGatewayStatus === "function") ? this.exchangeGateway.getGatewayStatus() : null,
+‎            governance: (this.governanceGate && typeof this.governanceGate.status === "function") ? this.governanceGate.status() : null,
+‎            debug: this.debug
+‎        };
+‎    }
+‎
+‎    isHealthy() {
+‎        const routerHealthy = this.orderRouter ? (typeof this.orderRouter.getOrderRouterStatus === "function" ? this.orderRouter.getOrderRouterStatus() !== null : false) : true;
+‎        const gatewayHealthy = this.exchangeGateway ? (typeof this.exchangeGateway.getGatewayStatus === "function" ? this.exchangeGateway.getGatewayStatus() !== null : false) : true;
+‎        const governanceHealthy = this.governanceGate ? (typeof this.governanceGate.status === "function" ? this.governanceGate.status() !== null : false) : true;
+‎        return (routerHealthy && gatewayHealthy && governanceHealthy && this.state.systemMode !== "LOCKDOWN");
+‎    }
+‎
+‎    log() {
+‎        if (!this.debug) return;
+‎        var args = Array.prototype.slice.call(arguments);
+‎        args.unshift("[MetaSystemOrchestrator]");
+‎        console.log.apply(console, args);
+‎    }
+‎
+‎    // =====================================================
+‎    // SECTION 4 — LIFECYCLE MANAGEMENT
+‎    // =====================================================
+‎    setMode(mode) {
+‎        this.mode = mode !== undefined && mode !== null ? mode : "PAPER";
+‎        return this;
+‎    }
+‎
+‎    enableDebug() {
+‎        this.debug = true;
+‎        return this;
+‎    }
+‎
+‎    disableDebug() {
+‎        this.debug = false;
+‎        return this;
+‎    }
+‎
+‎    reset() {
+‎        this.metrics = {
+‎            completedCycles: 0,
+‎            blockedCycles: 0,
+‎            successfulCycles: 0,
+‎            failedCycles: 0
+‎        };
+‎        this.state = {
+‎            cycle: 0,
+‎            lastSignal: null,
+‎            lastDecision: null,
+‎            lastCycleAt: null,
+‎            systemMode: "ACTIVE"
+‎        };
+‎        this.startedAt = Date.now();
+‎        return this;
+‎    }
+‎
+‎    destroy() {
+‎        this.reset();
+‎        this.metaBrain = null;
+‎        this.portfolioEngine = null;
+‎        this.capitalEngine = null;
+‎        this.riskGovernor = null;
+‎        this.strategyCoordinator = null;
+‎        this.logisticsEngine = null;
+‎        this.correlationEngine = null;
+‎        this.executionOptimizer = null;
+‎        this.orderRouter = null;
+‎        this.marketConnectivity = null;
+‎        this.exchangeGateway = null;
+‎        this.governanceGate = null;
+‎        this.eventHub = null;
+‎        return this;
+‎    }
+‎}
 
 /* ============================================================
  * SECTION 5 — REQUEST VALIDATION
