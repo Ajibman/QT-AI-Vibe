@@ -137,22 +137,40 @@
  */
 
 /* ============================================================
- * SECTION 1 — CONSTANTS
+ * SECTION 1 — CONSTANTS & ROUTER CONFIGURATION
  * ============================================================
  */
-
+const ROUTER_NAME = 'QT_AI_ORDER_ROUTER';
 
 const OrderRouter = {
+    // Safely look up existing maps or initialize them once to prevent data wiping
+    activeOrders: null,
+    statusCallbacks: null,
+
     initialize() {
-        this.activeOrders = new Map();
-        this.statusCallbacks = new Set();
+        if (!this.activeOrders) {
+            this.activeOrders = new Map();
+        }
+        if (!this.statusCallbacks) {
+            this.statusCallbacks = new Set();
+        }
+        return this;
     },
 
     routeOrder(orderData) {
+        // Enforce initialization check
+        if (!this.activeOrders) {
+            this.initialize();
+        }
+
         if (!this.isValidOrder(orderData)) {
             return { success: false, error: 'Invalid order structure' };
         }
-        const internalId = `OR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        // Generate robust unique internal ID
+        const cryptoId = Math.random().toString(36).substring(2, 11);
+        const internalId = `OR-${Date.now()}-${cryptoId}`;
+        
         const processedOrder = {
             id: internalId,
             externalId: orderData.id || null,
@@ -161,6 +179,7 @@ const OrderRouter = {
             status: 'PENDING',
             createdAt: new Date().toISOString()
         };
+
         this.activeOrders.set(internalId, processedOrder);
         return { success: true, orderId: internalId };
     },
@@ -168,9 +187,13 @@ const OrderRouter = {
     isValidOrder(order) {
         return !!(order && typeof order === 'object' && Array.isArray(order.items));
     }
-}; 
+};
 
-const ROUTER_NAME =
+// Export the module if using Node.js environment
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { OrderRouter, ROUTER_NAME };
+}
+
  
 ‎// =====================================================
 ‎// SECTION 2 — MAIN ORCHESTRATION LOOP (CONCLUSION)
