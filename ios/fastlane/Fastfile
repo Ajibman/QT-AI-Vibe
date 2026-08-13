@@ -4,16 +4,26 @@ platform :ios do
   desc "Build and submit directly to Apple App Store Production"
   lane :release do
     # 1. Fetch encrypted Apple distribution certificates safely
-    sync_code_signing(type: "appstore", readonly: true)
+      sync_code_signing(type: "appstore", readonly: true)
     
     # 2. Compile the native iOS application binary
-    build_app(scheme: "QT-AI-Vibe", workspace: "QT-AI-App.xcworkspace")
+      build_app(scheme: "QT-AI-Vibe", workspace: "QT-AI-App.xcworkspace")
     
     # 3. Securely upload the build to App Store Connect using your Apple API Key
-    upload_to_app_store(
+      upload_to_app_store(
       api_key_path: "fastlane/apple_api_key.json",
       skip_metadata: false,
       skip_screenshots: true
+
+    # 4. Upload to Google Play Console with Metadata
+      upload_to_play_store(
+      package_name: "com.qtai.vibe", 
+      json_key: ENV["PLAY_STORE_JSON_KEY_PATH"], 
+      track: "internal",
+      aab: "android/app/build/outputs/bundle/release/app-release.aab",
+      skip_upload_metadata: false,   # ENABLED: Uploads your titles & descriptions
+      skip_upload_images: false,     # ENABLED: Uploads icons & screenshots
+      skip_upload_changelogs: false  # ENABLED: Uploads release notes
     )
   end
 end
