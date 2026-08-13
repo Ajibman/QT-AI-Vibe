@@ -1,0 +1,30 @@
+default_platform(:android)
+
+platform :android do
+  desc "Build and deploy the QT-AI-Vibe app to the Google Play Internal Track"
+  lane :play_store_release do
+    # 1. Ensure the repository is clean before building
+    ensure_git_status_clean
+
+    # 2. Automatically bump the Android Version Code
+    # (Requires: fastlane add_plugin increment_version_code)
+    increment_version_code(app_project_dir: "android/app")
+
+    # 3. Build the signed Android App Bundle (AAB)
+    gradle(
+      task: "clean bundle",
+      build_type: "Release"
+    )
+
+    # 4. Upload to Google Play Console
+    upload_to_play_store(
+      package_name: "com.qtai.vibe", # Replace with your actual bundle ID
+      json_key: ENV["PLAY_STORE_JSON_KEY_PATH"], # Path to your service account key
+      track: "internal",
+      aab: "android/app/build/outputs/bundle/release/app-release.aab",
+      skip_upload_metadata: true,    # Set to false if managing store text via Fastlane
+      skip_upload_images: true,      # Set to false if managing screenshots via Fastlane
+      skip_upload_changelogs: false  # Allows uploading release notes from fastlane/metadata/
+    )
+  end
+end
