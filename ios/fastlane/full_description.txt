@@ -1,0 +1,8 @@
+Welcome to QT-AI Vibe, the definitive application interface for managing and tracking AI engine states. 
+
+Features:
+- Real-time build state monitoring and logs.
+- Simplified deployment pipeline oversight.
+- Seamless configuration management for advanced AI workspaces.
+
+Take control of your development pipelines with native engine speeds and automated workflows.
