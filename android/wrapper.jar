@@ -1,0 +1,8 @@
+This is a placeholder. The actual gradle-wrapper.jar binary must be committed separately as it is a JAR file.
+For now, please download the official Gradle wrapper JAR from:
+https://github.com/gradle/gradle/releases/download/v8.5/gradle-wrapper.jar
+
+Extract it and place it at: android/gradle/wrapper/gradle-wrapper.jar
+
+Or run this command to auto-download:
+  cd android && gradle wrapper --gradle-version 8.5
