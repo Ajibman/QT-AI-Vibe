@@ -1,24 +1,38 @@
-name: Publish to Google Play (production-android)
-on:
-  workflow_dispatch:
+ plugins {
+    id 'com.android.application'
+    id 'com.github.triplet.play' version '3.12.0' // Automates Google Play
+}
 
-jobs:
-  release:
-    name: Publish production Android
-    runs-on: ubuntu-latest
-    environment: production-android
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+android {
+    compileSdk 34
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
+    defaultConfig {
+        applicationId "com.qtai.app"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+    }
 
-      - name: Write Play service account JSON
-        run: echo "${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}" > $GITHUB_WORKSPACE/google-play.json
+    // This handles alternative stores (Amazon/Huawei) by creating flavor variations
+    flavorDimensions "storefront"
+    productFlavors {
+        googlePlay {
+            dimension "storefront"
+        }
+        amazonStore {
+            dimension "storefront"
+            applicationIdSuffix ".amazon"
+        }
+        huaweiGallery {
+            dimension "storefront"
+            applicationIdSuffix ".huawei"
+        }
+    }
+}
 
-      - name: Publish to Play
-        run: ./gradlew publishBundle -PplayAccountJson=$GITHUB_WORKSPACE/google-play.json
+// Connects your automated publisher directly to the Google Play flavor
+play {
+    serviceAccountCredentials = file(System.getenv("PLAY_STORE_JSON_KEY_PATH") ?: "play-key.json")
+    track = 'production'
+}
