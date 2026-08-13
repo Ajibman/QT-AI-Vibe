@@ -1,0 +1,50 @@
+name: QT-AI Play Store Deployment Pipeline
+
+on:
+  push:
+    branches:
+      - main # Triggers the build whenever code is pushed or merged to main
+
+jobs:
+  deploy_to_google_play:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Pull down the source code and metadata files
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetches full history so the git changelog script can read commits
+
+      # 2. Set up Java environment required for Android compilation
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # 3. Set up Ruby environment required to run Fastlane
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundle-cache: true # Caches dependencies to speed up future runs
+
+      # 4. Reconstruct the Google Play Service Account JSON key from Base64
+      - name: Decode Google Play JSON Key
+        run: echo "${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}" | base64 --decode > play-store-key.json
+
+      # 5. Reconstruct the release keystore file to sign the production AAB binary
+      - name: Decode Android Keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
+
+      # 6. Execute Fastlane to handle versioning, compilation, metadata, and upload
+      - name: Run Fastlane Deployment Lane
+        env:
+          PLAY_STORE_JSON_KEY_PATH: "../play-store-key.json" # Relative to the android/ execution directory
+          MYAPP_RELEASE_STORE_FILE: "release.keystore"
+          MYAPP_RELEASE_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          bundle install
+          bundle exec fastlane android play_store_release
+          
