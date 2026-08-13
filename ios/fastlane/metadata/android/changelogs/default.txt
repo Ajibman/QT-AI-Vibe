@@ -1,0 +1,9 @@
+def generate_git_changelog
+  
+  changelog = sh("git log -n 3 --pretty=format:'- %s'").strip
+  
+  sh("mkdir -p fastlane/metadata/android/en-US/changelogs")
+  
+  File.write("fastlane/metadata/android/en-US/changelogs/default.txt", changelog)
+end
+    
