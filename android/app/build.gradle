@@ -13,6 +13,17 @@ plugins {
 android {
     compileSdk 34
 
+        signingConfigs {
+        release {
+            if (signingProps.containsKey('STORE_FILE')) {
+                storeFile = rootProject.file(signingProps['STORE_FILE'])
+                storePassword = signingProps['STORE_PASSWORD']
+                keyAlias = signingProps['KEY_ALIAS']
+                keyPassword = signingProps['KEY_PASSWORD']
+            }
+        }
+    }
+        
     defaultConfig {
         applicationId "com.qtai.app"
         minSdk 24
