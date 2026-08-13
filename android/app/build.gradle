@@ -1,4 +1,11 @@
-  plugins {
+// Read signing properties from root directory
+def signingPropsFile = rootProject.file('signing.properties')
+def signingProps = new Properties()
+if (signingPropsFile.exists()) {
+    signingProps.load(new FileInputStream(signingPropsFile))
+}
+
+plugins {
     id 'com.android.application'
     id 'com.github.triplet.play' version '3.12.0' // Automates Google Play
 }
