@@ -36,3 +36,20 @@ play {
     serviceAccountCredentials = file(System.getenv("PLAY_STORE_JSON_KEY_PATH") ?: "play-key.json")
     track = 'production'
 }
+
+// overwrite just the release signing parameters with pipeline-ready configurations.
+android.signingConfigs {
+    release {
+        storeFile file(System.getenv("MYAPP_RELEASE_STORE_FILE") ?: "release.keystore")
+        storePassword System.getenv("MYAPP_RELEASE_STORE_PASSWORD") ?: project.findProperty("MYAPP_RELEASE_STORE_PASSWORD")
+        keyAlias System.getenv("MYAPP_RELEASE_KEY_ALIAS") ?: project.findProperty("MYAPP_RELEASE_KEY_ALIAS") ?: "release-key"
+        keyPassword System.getenv("MYAPP_RELEASE_KEY_PASSWORD") ?: project.findProperty("MYAPP_RELEASE_KEY_PASSWORD")
+    }
+}
+
+android.buildTypes.release {
+    minifyEnabled true
+    shrinkResources true
+    signingConfig android.signingConfigs.release
+}
+
