@@ -1,0 +1,19 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Build and submit directly to Apple App Store Production"
+  lane :release do
+    # 1. Fetch encrypted Apple distribution certificates safely
+    sync_code_signing(type: "appstore", readonly: true)
+    
+    # 2. Compile the native iOS application binary
+    build_app(scheme: "QT-AI-App", workspace: "QT-AI-App.xcworkspace")
+    
+    # 3. Securely upload the build to App Store Connect using your Apple API Key
+    upload_to_app_store(
+      api_key_path: "fastlane/apple_api_key.json",
+      skip_metadata: false,
+      skip_screenshots: true
+    )
+  end
+end
