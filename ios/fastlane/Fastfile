@@ -7,7 +7,7 @@ platform :ios do
     sync_code_signing(type: "appstore", readonly: true)
     
     # 2. Compile the native iOS application binary
-    build_app(scheme: "QT-AI-App", workspace: "QT-AI-App.xcworkspace")
+    build_app(scheme: "QT-AI-Vibe", workspace: "QT-AI-App.xcworkspace")
     
     # 3. Securely upload the build to App Store Connect using your Apple API Key
     upload_to_app_store(
