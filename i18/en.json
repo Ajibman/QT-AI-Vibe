@@ -1,0 +1,3 @@
+# Pass your newly created path into the validator
+validation_results = validate_localization_matrix("src/assets/i18n")
+print(validation_results)
