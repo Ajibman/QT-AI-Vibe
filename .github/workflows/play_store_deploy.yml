@@ -23,41 +23,26 @@ jobs:
       # Step 3: Decode your private Android release Keystore from GitHub Secrets
       - name: Decode Android Keystore File
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.jks
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/release.keystore
 
       # Step 4: Run the Gradle production build to output a signed .aab bundle
       - name: Build Signed Android App Bundle (AAB)
-        run: ./gradlew bundleRelease
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew :app:bundleGooglePlayRelease
         env:
-          SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
-          SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          MYAPP_RELEASE_STORE_FILE: "release.keystore"
+          MYAPP_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          MYAPP_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          MYAPP_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
       # Step 5: Deliver the finished build directly into your Google Play Console
       - name: Upload to Google Play Track
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
-          packageName: com.qtai.app
-          
-          # Replace with your exact Android ApplicationID
-          releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
+          packageName: "com.qtai.app"
+          releaseFiles: android/app/build/outputs/bundle/googlePlayRelease/app-googlePlay-release.aab
           track: internal # Safest path: push to internal track first for team testing
-
-          [Section 1: Existing patterns like node_modules/ or build/ targets]
-
-
-          [Section 2: Security Update - PLACE AT THE VERY BOTTOM]
-          
-          # Keystore and signing files
-          *.jks
-          *.keystore
-          *.p12
-
-          # Local configuration and password properties
-          *.properties
-          !local.properties
-          signing.properties
-
-
           
