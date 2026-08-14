@@ -1,0 +1,8 @@
+{
+  "appName": "QuantumTrader-AI",
+  "compilerMode": "Mobile-Console-Auto",
+  "totalSupportedLanguages": 25,
+  "defaultSystemFallback": "en",
+  "folderSystemPath": "src/assets/i18n",
+  "status": "READY_TO_INITIALIZE"
+}
