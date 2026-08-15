@@ -1,0 +1,27 @@
+‎{
+‎  "en": {
+‎    "app_title": "QuantumTrader-AI",
+‎    "status_ready": "Ready",
+‎    "compiler_running": "Compiling program...",
+‎    "error_network": "GitHub API connection failure."
+‎  },
+‎  "es": {
+‎    "app_title": "QuantumTrader-AI",
+‎    "status_ready": "Listo",
+‎    "compiler_running": "Compiling...",
+‎    "error_network": "Fallo de conexión API."
+‎  },
+‎  "zh": {
+‎    "app_title": "QuantumTrader-AI",
+‎    "status_ready": "就绪",
+‎    "compiler_running": "正在编译...",
+‎    "error_network": "GitHub API 连接失败。"
+‎  },
+‎  "ja": {
+‎    "app_title": "QuantumTrader-AI",
+‎    "status_ready": "準備完了",
+‎    "compiler_running": "コンパイル中...",
+‎    "error_network": "GitHub API 接続失敗。"
+‎  }
+‎}
+‎
